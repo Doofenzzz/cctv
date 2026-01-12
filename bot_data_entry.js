@@ -1,5 +1,5 @@
-var token = "MASUKKAN_TOKEN_BOT_DISINI";
-var SheetID = "MASUKKAN_SPREADSHEET_ID_DISINI";
+var token = "";
+var SheetID = "";
 
 // Kolom index (0-based)
 var KOLOM = {
@@ -38,8 +38,9 @@ function doPost(e) {
 }
 
 function prosesPerintah(text, sender) {
-    // Cek apakah dimulai dengan /ID SPV:
-    if (text.startsWith("/ID SPV:") || text.startsWith("/id spv:")) {
+    // Cek apakah dimulai dengan /ID SPV (dengan flexible spacing sebelum :)
+    var lowerText = text.toLowerCase();
+    if (lowerText.startsWith("/id spv")) {
         return inputData(text, sender);
     }
 
@@ -90,35 +91,68 @@ function inputData(text, sender) {
     var lines = text.split("\n");
     var dataInput = {};
 
+    // Helper function untuk parse field dengan flexible spacing
+    // Bisa handle: "NIK:", "NIK :", "NIK  :", dll
+    function parseField(line, fieldName) {
+        var upperLine = line.toUpperCase();
+        var pattern = fieldName.toUpperCase();
+
+        // Cek apakah dimulai dengan fieldName (dengan atau tanpa spasi sebelum :)
+        if (upperLine.startsWith(pattern)) {
+            var rest = line.substring(pattern.length).trim();
+            if (rest.startsWith(":")) {
+                return rest.substring(1).trim();
+            }
+        }
+        return null;
+    }
+
     for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
+        var value;
 
-        if (line.toLowerCase().startsWith("/id spv:")) {
-            dataInput.ID_SPV = line.substring(8).trim();
-        } else if (line.toUpperCase().startsWith("KKONTAK:")) {
-            dataInput.KKONTAK = line.substring(8).trim();
-        } else if (line.toUpperCase().startsWith("NIK:")) {
-            dataInput.NIK = line.substring(4).trim();
-        } else if (line.toUpperCase().startsWith("NAMA:")) {
-            dataInput.NAMA = line.substring(5).trim();
-        } else if (line.toUpperCase().startsWith("NO HP:")) {
-            dataInput.NO_HP = line.substring(6).trim();
-        } else if (line.toUpperCase().startsWith("ALAMAT:")) {
-            dataInput.ALAMAT = line.substring(7).trim();
-        } else if (line.toUpperCase().startsWith("KELURAHAN:")) {
-            dataInput.KELURAHAN = line.substring(10).trim();
-        } else if (line.toUpperCase().startsWith("KECAMATAN:")) {
-            dataInput.KECAMATAN = line.substring(10).trim();
-        } else if (line.toUpperCase().startsWith("ODP:")) {
-            dataInput.ODP = line.substring(4).trim();
-        } else if (line.toUpperCase().startsWith("TIKOR:")) {
-            dataInput.TIKOR = line.substring(6).trim();
-        } else if (line.toUpperCase().startsWith("PAKET:")) {
-            dataInput.PAKET = line.substring(6).trim();
-        } else if (line.toUpperCase().startsWith("KETERANGAN:")) {
-            dataInput.KETERANGAN = line.substring(11).trim();
-        } else if (line.toUpperCase().startsWith("EMAIL:")) {
-            dataInput.EMAIL = line.substring(6).trim();
+        // ID SPV (special case karena ada slash)
+        if (line.toLowerCase().startsWith("/id spv")) {
+            var rest = line.substring(7).trim();
+            if (rest.startsWith(":")) {
+                dataInput.ID_SPV = rest.substring(1).trim();
+            }
+        }
+        else if ((value = parseField(line, "KKONTAK")) !== null) {
+            dataInput.KKONTAK = value;
+        }
+        else if ((value = parseField(line, "NIK")) !== null) {
+            dataInput.NIK = value;
+        }
+        else if ((value = parseField(line, "NAMA")) !== null) {
+            dataInput.NAMA = value;
+        }
+        else if ((value = parseField(line, "NO HP")) !== null) {
+            dataInput.NO_HP = value;
+        }
+        else if ((value = parseField(line, "ALAMAT")) !== null) {
+            dataInput.ALAMAT = value;
+        }
+        else if ((value = parseField(line, "KELURAHAN")) !== null) {
+            dataInput.KELURAHAN = value;
+        }
+        else if ((value = parseField(line, "KECAMATAN")) !== null) {
+            dataInput.KECAMATAN = value;
+        }
+        else if ((value = parseField(line, "ODP")) !== null) {
+            dataInput.ODP = value;
+        }
+        else if ((value = parseField(line, "TIKOR")) !== null) {
+            dataInput.TIKOR = value;
+        }
+        else if ((value = parseField(line, "PAKET")) !== null) {
+            dataInput.PAKET = value;
+        }
+        else if ((value = parseField(line, "KETERANGAN")) !== null) {
+            dataInput.KETERANGAN = value;
+        }
+        else if ((value = parseField(line, "EMAIL")) !== null) {
+            dataInput.EMAIL = value;
         }
     }
 
@@ -176,11 +210,7 @@ function inputData(text, sender) {
         sheet.appendRow(rowData);
 
         return "✅ <b>Data Berhasil Disimpan!</b>\n\n" +
-            "Terimakasih " + dataInput.ID_SPV + " !\n\n" +
-            "📅 Tanggal: " + timezone + "\n" +
-            "🕐 Jam: " + timeNow + "\n" +
-            "👤 Nama: " + dataInput.NAMA + "\n" +
-            "🆔 NIK: " + dataInput.NIK;
+            "Terimakasih " + dataInput.ID_SPV + " !\n\n"
 
     } catch (error) {
         return "❌ <b>Error menyimpan data:</b>\n" + error.message;
