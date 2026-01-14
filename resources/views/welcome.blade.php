@@ -3,7 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CCTV Monitoring Pekanbaru</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>CCTV Monitoring - Office</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,41 +24,29 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-base md:text-lg font-bold leading-tight">CCTV PKU</h1>
-                    <p class="text-[10px] md:text-xs text-slate-400">Pekanbaru Online</p>
+                    <h1 class="text-base md:text-lg font-bold leading-tight">CCTV Monitor</h1>
+                    <p class="text-[10px] md:text-xs text-slate-400">Office Surveillance</p>
                 </div>
             </div>
             
             <!-- Right Side -->
             <div class="flex items-center gap-3 md:gap-4">
                 <div class="live-badge text-[10px] md:text-xs">LIVE</div>
-                <span class="hidden md:inline text-slate-400">|</span>
-                <span class="hidden md:inline text-sm">Pekanbaru</span>
-                <span class="hidden md:inline text-slate-400">|</span>
                 <span id="current-time" class="text-xs md:text-sm font-medium font-mono">00:00:00</span>
             </div>
         </div>
     </header>
 
     <!-- Hero Section -->
-    <section class="py-6 md:py-10 text-center">
+    <section class="py-8 md:py-12 text-center">
         <div class="max-w-4xl mx-auto px-4">
+            <h2 class="text-2xl md:text-3xl font-bold mb-3">Office CCTV Monitoring</h2>
             <p class="text-slate-300 mb-2 text-sm md:text-base">
-                Pantau keamanan wilayah Pekanbaru secara real-time dengan sistem 
-                <a href="#" class="text-blue-400 hover:underline font-semibold">CCTV PKU</a>.
+                Pantau keamanan kantor Anda secara real-time dari mana saja.
             </p>
-            <p class="text-slate-400 text-xs md:text-sm mb-5">
-                Akses gratis 24 jam untuk memantau berbagai lokasi di Pekanbaru, Riau.
+            <p class="text-slate-400 text-xs md:text-sm mb-6">
+                Mendukung kamera Dahua, EZVIZ, Hikvision, dan IP Camera lainnya via RTSP.
             </p>
-            
-            <!-- Coverage Badge -->
-            <div class="coverage-badge mb-6">
-                <svg class="w-4 h-4 md:w-5 md:h-5 text-orange-400 shrink-0 mt-0.5 md:mt-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <span>Area coverage: <span class="text-orange-400 font-semibold">Senapelan</span> & <span class="text-orange-400 font-semibold">Pekanbaru Kota</span></span>
-            </div>
             
             <!-- Feature Badges -->
             <div class="flex flex-wrap justify-center gap-2 md:gap-3 mb-6">
@@ -72,7 +61,7 @@
                     <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                     </svg>
-                    <span>Multi-View</span>
+                    <span>Multi-Camera</span>
                 </div>
                 <div class="feature-badge">
                     <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,17 +80,10 @@
             <!-- Stats Cards -->
             <div class="flex justify-center gap-3 md:gap-4">
                 <div class="stats-card">
-                    <div class="stats-number green" id="online-count">20</div>
+                    <div class="stats-number green" id="online-count">0</div>
                     <div class="text-left">
-                        <p class="text-[10px] md:text-xs text-slate-400">Online</p>
-                        <p class="text-xs md:text-sm font-medium">Kamera</p>
-                    </div>
-                </div>
-                <div class="stats-card">
-                    <div class="stats-number orange" id="area-count">8</div>
-                    <div class="text-left">
-                        <p class="text-[10px] md:text-xs text-slate-400">Monitoring</p>
-                        <p class="text-xs md:text-sm font-medium">Area</p>
+                        <p class="text-[10px] md:text-xs text-slate-400">Active</p>
+                        <p class="text-xs md:text-sm font-medium">Cameras</p>
                     </div>
                 </div>
             </div>
@@ -111,93 +93,32 @@
     <!-- CCTV Section -->
     <section class="pb-10">
         <div class="max-w-7xl mx-auto px-4">
-            <!-- Section Header -->
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>
-                    <h2 class="text-xl md:text-2xl font-bold mb-1">CCTV Publik</h2>
-                    <p class="text-xs md:text-sm text-slate-400"><span id="camera-count">20</span> kamera tersedia • Streaming langsung 24/7</p>
+                    <h2 class="text-xl md:text-2xl font-bold mb-1">Your Cameras</h2>
+                    <p class="text-xs md:text-sm text-slate-400">Tambahkan CCTV kantor Anda (Dahua, EZVIZ, Hikvision, dll)</p>
                 </div>
                 
-                <div class="flex gap-2">
-                    <div class="search-bar flex-1 md:w-72">
-                        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        <input type="text" id="search-input" placeholder="Cari lokasi...">
-                        <span class="keyboard-hint hidden md:block">⌘K</span>
-                    </div>
-                    
-                    <div class="view-toggle shrink-0">
-                        <button class="active" id="map-view-btn" title="Map View">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                            </svg>
-                        </button>
-                        <button id="grid-view-btn" title="Grid View">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+                <button class="add-cctv-btn" onclick="openAddCustomCctvModal()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Tambah CCTV
+                </button>
             </div>
             
-            <!-- Map View -->
-            <div id="map-view" class="map-container">
-                <!-- Area Dropdown -->
-                <div class="absolute top-3 left-3 z-10">
-                    <div class="map-dropdown">
-                        <select id="area-filter">
-                            <option value="all">Pekanbaru (20)</option>
-                            <option value="sudirman">Sudirman (7)</option>
-                            <option value="mtq">MTQ (2)</option>
-                            <option value="tuanku-tambusai">Tuanku Tambusai (2)</option>
-                            <option value="garuda-sakti">Garuda Sakti (1)</option>
-                            <option value="rumbai">Rumbai (3)</option>
-                            <option value="sembilang">Sembilang (3)</option>
-                            <option value="tuan-kadi">Tuan Kadi (2)</option>
-                            <option value="mpp">MPP (1)</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- Status Counter -->
-                <div class="absolute top-3 right-3 z-10">
-                    <div class="flex gap-2 bg-slate-900/90 backdrop-blur border border-white/10 rounded-lg px-3 py-2">
-                        <span class="flex items-center gap-1.5 text-xs">
-                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
-                            <span id="stabil-count">19</span>
-                        </span>
-                        <span class="flex items-center gap-1.5 text-xs">
-                            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-                            <span id="tunnel-count">1</span>
-                        </span>
-                    </div>
-                </div>
-                
-                <!-- Map -->
-                <div id="map"></div>
-                
-                <!-- Legend (Desktop only) -->
-                <div class="absolute bottom-3 left-3 z-10 hidden md:block">
-                    <div class="flex gap-4 bg-slate-900/90 backdrop-blur border border-white/10 rounded-lg px-3 py-2 text-xs">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-green-500"></span> Stabil</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-orange-500"></span> Tunnel</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span> Offline</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-red-500"></span> Perbaikan</span>
-                    </div>
-                </div>
-                
-                <!-- Zoom Controls -->
-                <div class="absolute bottom-3 right-3 z-10 flex flex-col gap-1">
-                    <button id="zoom-in" class="w-8 h-8 flex items-center justify-center bg-slate-900/90 backdrop-blur border border-white/10 rounded-lg text-white hover:bg-blue-600 transition text-lg">+</button>
-                    <button id="zoom-out" class="w-8 h-8 flex items-center justify-center bg-slate-900/90 backdrop-blur border border-white/10 rounded-lg text-white hover:bg-blue-600 transition text-lg">−</button>
-                </div>
+            <!-- Custom CCTV Grid -->
+            <div id="custom-cctv-grid" class="custom-cctv-grid">
+                <!-- Cards will be populated by JS -->
             </div>
             
-            <!-- Grid View (Hidden by default) -->
-            <div id="grid-view" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Grid items will be populated by JS -->
+            <!-- Empty State -->
+            <div id="custom-cctv-empty" class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <p class="mb-4">Belum ada CCTV. Klik "Tambah CCTV" untuk menambahkan kamera Anda.</p>
+                <p class="text-xs text-slate-500">Mendukung RTSP stream dari Dahua, EZVIZ, Hikvision, dan IP Camera lainnya.</p>
             </div>
         </div>
     </section>
@@ -205,7 +126,7 @@
     <!-- Footer -->
     <footer class="py-6 border-t border-white/10">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs md:text-sm text-slate-500">
-            <p>© 2026 CCTV PKU Pekanbaru. Powered by Google Maps.</p>
+            <p>© 2026 Office CCTV Monitor. Secure & Private.</p>
         </div>
     </footer>
 
@@ -230,39 +151,65 @@
                     <h3 class="cctv-title" id="modal-title">CCTV Title</h3>
                     <div class="cctv-location">
                         <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                         </svg>
-                        <span id="modal-location">Location</span>
-                        <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-medium uppercase" id="modal-area">AREA</span>
+                        <span id="modal-location">Office Camera</span>
+                        <span class="px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded text-[10px] font-medium uppercase" id="modal-area">OFFICE</span>
                     </div>
                 </div>
                 
                 <div class="flex items-center justify-between md:justify-end gap-3">
-                    <div class="modal-controls">
-                        <button title="Zoom Out">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7"/>
-                            </svg>
-                        </button>
-                        <button title="100%">100%</button>
-                        <button title="Zoom In">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v6m3-3H7"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <div class="status-indicator" id="modal-status">Stabil</div>
+                    <div class="status-indicator" id="modal-status">Connecting...</div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Add Custom CCTV Modal -->
+    <div class="custom-cctv-modal" id="add-cctv-modal">
+        <div class="custom-cctv-form">
+            <h3>
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                Tambah CCTV
+            </h3>
+            
+            <form id="add-cctv-form" onsubmit="submitAddCustomCctv(event)">
+                <div class="form-group">
+                    <label for="cctv-name">Nama CCTV *</label>
+                    <input type="text" id="cctv-name" name="name" placeholder="Contoh: Kantor Lantai 1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cctv-url">RTSP URL *</label>
+                    <input type="text" id="cctv-url" name="rtsp_url" placeholder="rtsp://192.168.1.100:554/..." required>
+                    <small>Format: rtsp://IP:PORT/path atau tcp://ngrok-url:port/path</small>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cctv-username">Username (opsional)</label>
+                        <input type="text" id="cctv-username" name="username" placeholder="admin">
+                    </div>
+                    <div class="form-group">
+                        <label for="cctv-password">Password (opsional)</label>
+                        <input type="password" id="cctv-password" name="password" placeholder="••••••">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddCustomCctvModal()">Batal</button>
+                    <button type="submit" class="btn-submit" id="submit-cctv-btn">
+                        <span id="submit-text">Simpan</span>
+                        <span id="submit-loading" class="loading-spinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- HLS.js for .m3u8 streaming -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    
-    <!-- Google Maps Script -->
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAOVYRIgupAurZup5y1PRh8Ismb1A3lLao&libraries=places&callback=initMap">
-    </script>
 </body>
 </html>
