@@ -1,0 +1,2 @@
+@echo off
+C:\ffmpeg-8.0.1-essentials_build\ffmpeg-8.0.1-essentials_build\bin\ffmpeg.exe -y -nostdin -rtsp_transport tcp -i "rtsp://admin:L2D11FA0@192.168.1.11:554/cam/realmonitor?channel=1&subtype=0" -c:v libx264 -preset ultrafast -tune zerolatency -c:a aac -ar 44100 -f hls -hls_time 2 -hls_list_size 3 -hls_flags delete_segments+append_list -hls_segment_filename C:\laragon\www\cctv\storage\app\hls\test_manual_3\segment_%%03d.ts C:\laragon\www\cctv\storage\app\hls\test_manual_3\index.m3u8 > C:\laragon\www\cctv\storage\app\hls\test_manual_3\ffmpeg.log 2>&1
