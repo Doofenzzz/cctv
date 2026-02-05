@@ -33,20 +33,14 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Copy composer files first (better layer caching)
-COPY composer.json composer.lock ./
-
-# Install PHP dependencies
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
-
-# Copy application code
+# Copy application code first
 COPY . .
 
 # Copy built assets from node stage
 COPY --from=node-builder /app/public/build ./public/build
 
-# Generate optimized autoloader
-RUN composer dump-autoload --optimize
+# Install PHP dependencies with increased memory
+RUN COMPOSER_MEMORY_LIMIT=-1 composer install --no-dev --optimize-autoloader --prefer-dist --no-interaction
 
 # Setup directories and permissions
 RUN mkdir -p storage/app/hls \
