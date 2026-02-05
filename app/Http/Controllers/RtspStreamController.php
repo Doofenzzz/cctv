@@ -60,6 +60,53 @@ class RtspStreamController extends Controller
     }
 
     /**
+     * Check if running on Windows
+     */
+    private function isWindows(): bool
+    {
+        return strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+    }
+
+    /**
+     * Get FFmpeg binary path
+     */
+    private function getFFmpegPath(): string
+    {
+        // Check environment variable first
+        $envPath = env('FFMPEG_PATH');
+        if ($envPath && file_exists($envPath)) {
+            return $envPath;
+        }
+
+        // Platform-specific defaults
+        if ($this->isWindows()) {
+            // Common Windows FFmpeg locations
+            $windowsPaths = [
+                'C:\ffmpeg\bin\ffmpeg.exe',
+                'C:\Program Files\ffmpeg\bin\ffmpeg.exe',
+                'C:\ffmpeg-8.0.1-essentials_build\ffmpeg-8.0.1-essentials_build\bin\ffmpeg.exe',
+            ];
+            foreach ($windowsPaths as $path) {
+                if (file_exists($path)) {
+                    return $path;
+                }
+            }
+            return 'ffmpeg'; // Hope it's in PATH
+        }
+
+        // Linux/Docker - FFmpeg is usually in /usr/bin
+        return '/usr/bin/ffmpeg';
+    }
+
+    /**
+     * Get path separator for current OS
+     */
+    private function getPathSeparator(): string
+    {
+        return $this->isWindows() ? '\\' : '/';
+    }
+
+    /**
      * Stream custom CCTV via RTSP to HLS conversion
      */
     public function stream(Request $request)
@@ -80,18 +127,15 @@ class RtspStreamController extends Controller
         $streamId = preg_replace('/[^a-zA-Z0-9_-]/', '', $streamId);
 
         $hlsDir = $this->getHlsDirectory();
-        $outputPath = "{$hlsDir}/{$streamId}";
-        $playlistPath = "{$outputPath}/index.m3u8";
+        $sep = $this->getPathSeparator();
+        $outputPath = "{$hlsDir}{$sep}{$streamId}";
+        $playlistPath = "{$outputPath}{$sep}index.m3u8";
 
         if (!is_dir($outputPath)) {
             mkdir($outputPath, 0755, true);
         }
 
-        // Normalize paths for Windows to avoid mixed slashes
-        $outputPath = str_replace('/', '\\', $outputPath);
-        $playlistPath = str_replace('/', '\\', $playlistPath);
-
-        $pidFile = "{$outputPath}\\ffmpeg.pid";
+        $pidFile = "{$outputPath}{$sep}ffmpeg.pid";
         
         // Check if already running
         if (file_exists($pidFile)) {
@@ -124,65 +168,41 @@ class RtspStreamController extends Controller
             mkdir($outputPath, 0755, true);
         }
 
-        // FFmpeg arguments
-        // Reduced hls_time to 1 for lower latency
+        $ffmpegBinary = $this->getFFmpegPath();
+        $segmentPattern = "{$outputPath}{$sep}segment_%03d.ts";
+        $logFile = "{$outputPath}{$sep}ffmpeg.log";
+
+        // FFmpeg arguments - platform agnostic
         $ffmpegArgs = [
             '-y', '-nostdin',
-            '-analyzeduration', '100000', '-probesize', '100000', // Ultra-fast start (reduce buffer analysis)
-            '-loglevel', 'warning', // Reduce log noise unless error
-            '-rtsp_transport', 'tcp', // Force TCP for reliability
+            '-analyzeduration', '100000', '-probesize', '100000',
+            '-loglevel', 'warning',
+            '-rtsp_transport', 'tcp',
             '-i', $rtspUrl,
             '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'zerolatency',
-            '-force_key_frames', 'expr:gte(t,n_forced*2)', // Force Keyframe every 2 seconds (Matches Segment)
-            '-vf', 'scale=1280:-2', // Downscale to 720p (Flip moved to Frontend)
-            '-crf', '28', '-maxrate', '1500k', '-bufsize', '3000k', // Constrain bitrate further
-            '-an', // Disable audio to prevent encoding crashes (common with CCTV G.711/PCM)
+            '-force_key_frames', 'expr:gte(t,n_forced*2)',
+            '-vf', 'scale=1280:-2',
+            '-crf', '28', '-maxrate', '1500k', '-bufsize', '3000k',
+            '-an',
             '-f', 'hls',
-            '-hls_time', '2', // 2s Segment = Better stability than 1s
-            '-hls_list_size', '5', // Increase from 2 to 5 to prevent 404s if player lags (keeps 10s history)
-            '-hls_flags', 'delete_segments+append_list+omit_endlist', // CRITICAL: omit_endlist forces "Live"
-            '-hls_segment_filename', "{$outputPath}\\segment_%03d.ts",
+            '-hls_time', '2',
+            '-hls_list_size', '5',
+            '-hls_flags', 'delete_segments+append_list+omit_endlist',
+            '-hls_segment_filename', $segmentPattern,
             $playlistPath
         ];
 
-        // Absolute path to FFmpeg
-        $ffmpegBinary = 'C:\ffmpeg-8.0.1-essentials_build\ffmpeg-8.0.1-essentials_build\bin\ffmpeg.exe';
-        
-        $logFile = "{$outputPath}\\ffmpeg.log";
-        
-        // Generate a Batch File for this specific stream
-        // This avoids ALL quoting/escaping hell in PowerShell/PHP passing
-        $batchContent = "@echo off\r\n";
-        // Title hack to find process later if needed
-        $batchContent .= "title FFmpeg_Stream_{$streamId}\r\n";
-        $batchContent .= "cd /d \"{$outputPath}\"\r\n";
-        $batchContent .= "\"{$ffmpegBinary}\" ";
-        
-        // Add arguments to batch file content
-        foreach ($ffmpegArgs as $arg) {
-             // Escape % for batch file (e.g. %03d -> %%03d)
-             // Because %0 is the script name in cmd.exe
-             $safeArg = str_replace('%', '%%', $arg);
-             $batchContent .= " \"{$safeArg}\"";
+        if ($this->isWindows()) {
+            $pid = $this->startWindowsProcess($ffmpegBinary, $ffmpegArgs, $outputPath, $logFile, $streamId);
+        } else {
+            $pid = $this->startLinuxProcess($ffmpegBinary, $ffmpegArgs, $logFile);
         }
-        
-        // Redirect output
-        $batchContent .= " > \"{$logFile}\" 2>&1\r\n";
-        $batchContent .= "exit\r\n";
-        
-        $batchFile = "{$outputPath}\\run.bat";
-        file_put_contents($batchFile, $batchContent);
-        
-        Log::info("Generated Batch File at: {$batchFile}");
-        
-        // Execute the batch file in background via CMD (simpler than PowerShell)
-        $pid = $this->startBackgroundProcess($batchFile);
 
         if ($pid) {
             file_put_contents($pidFile, $pid);
         }
 
-        // Wait a small amount for startup (Reduced from 2s to 0.5s for speed)
+        // Wait a small amount for startup
         usleep(500000);
 
         return response()->json([
@@ -193,68 +213,81 @@ class RtspStreamController extends Controller
         ]);
     }
 
-    private function ensureOrphanProcessesKilled(string $streamId)
+    /**
+     * Start FFmpeg process on Linux
+     */
+    private function startLinuxProcess(string $ffmpegBinary, array $args, string $logFile): int
     {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // OPTIMIZATION: WMIC is too slow (1-2s).
-            // We set "title FFmpeg_Stream_{$streamId}" in the batch file.
-            // So we can use taskkill by Window Title which is instant.
-            
-            // Kill any CMD window with this specific title
-            // /F = Force, /FI = Filter
-            exec("taskkill /F /FI \"WINDOWTITLE eq FFmpeg_Stream_$streamId\" >NUL 2>&1");
-            
-            // Note: killing the CMD wrapper usually kills the child ffmpeg provided we used /T or if cmd was parent.
-            // If ffmpeg remains, it's harder to find without WMIC, but usually killing the batch script is enough logic for "Restarting".
-            
-        } else {
-            exec("pkill -f '{$streamId}' >/dev/null 2>&1");
-        }
+        $escapedArgs = array_map('escapeshellarg', $args);
+        $command = escapeshellarg($ffmpegBinary) . ' ' . implode(' ', $escapedArgs);
+        $fullCommand = "nohup {$command} > " . escapeshellarg($logFile) . " 2>&1 & echo $!";
+        
+        $output = [];
+        exec($fullCommand, $output);
+        
+        return isset($output[0]) ? (int)$output[0] : 0;
     }
 
     /**
-     * Start a background process compatible with Windows and Linux
+     * Start FFmpeg process on Windows
      */
-    private function startBackgroundProcess(string $batchFile, array $ignored = [], ?string $ignoredLog = null): ?int
+    private function startWindowsProcess(string $ffmpegBinary, array $args, string $outputPath, string $logFile, string $streamId): int
     {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // Use WMI to start process - this is the most robust way to detach from Apache/PHP
-            // cmd /c start /B "" "path\to\bat" > NUL 2>&1
-            $command = "cmd.exe /c \"{$batchFile}\"";
-            
-            // Execute via COM object if available, otherwise fallback to popen
-            try {
-                if (class_exists('COM')) {
-                    $wmi = new \COM("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
-                    $process = $wmi->Get("Win32_Process");
-                    $pid = 0;
-                    // 0 = Hidden Window
-                    $result = $process->Create($command, null, null, $pid);
-                    
-                    if ($result == 0) {
-                        return $pid;
-                    }
+        // Generate a Batch File for this specific stream
+        $batchContent = "@echo off\r\n";
+        $batchContent .= "title FFmpeg_Stream_{$streamId}\r\n";
+        $batchContent .= "cd /d \"{$outputPath}\"\r\n";
+        $batchContent .= "\"{$ffmpegBinary}\" ";
+        
+        foreach ($args as $arg) {
+             $safeArg = str_replace('%', '%%', $arg);
+             $batchContent .= " \"{$safeArg}\"";
+        }
+        
+        $batchContent .= " > \"{$logFile}\" 2>&1\r\n";
+        $batchContent .= "exit\r\n";
+        
+        $batchFile = "{$outputPath}\\run.bat";
+        file_put_contents($batchFile, $batchContent);
+        
+        Log::info("Generated Batch File at: {$batchFile}");
+        
+        // Execute via COM object if available
+        try {
+            if (class_exists('COM')) {
+                $wmi = new \COM("winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2");
+                $process = $wmi->Get("Win32_Process");
+                $pid = 0;
+                $result = $process->Create("cmd.exe /c \"{$batchFile}\"", null, null, $pid);
+                
+                if ($result == 0) {
+                    return $pid;
                 }
-            } catch (\Exception $e) {
-                Log::warning("WMI Process Start failed: " . $e->getMessage());
             }
+        } catch (\Exception $e) {
+            Log::warning("WMI Process Start failed: " . $e->getMessage());
+        }
 
-            // Fallback: Use simple popen with start command
-            $pHandle = popen("start /B \"\" \"{$batchFile}\"", "r");
-            
-            // Last resort: WMIC
-            // wmic process call create "cmd.exe /c ...."
-            $wmicCmd = "wmic process call create \"cmd.exe /c \\\"{$batchFile}\\\"\"";
-            $output = shell_exec($wmicCmd);
-            
-            if (preg_match('/ProcessId = (\d+);/', $output, $matches)) {
-                return (int)$matches[1];
-            }
-            
-            return 0; // Failed to get PID
+        // Fallback: WMIC
+        $wmicCmd = "wmic process call create \"cmd.exe /c \\\"{$batchFile}\\\"\"";
+        $output = shell_exec($wmicCmd);
+        
+        if (preg_match('/ProcessId = (\d+);/', $output, $matches)) {
+            return (int)$matches[1];
+        }
+        
+        // Last resort: popen
+        popen("start /B \"\" \"{$batchFile}\"", "r");
+        return 0;
+    }
+
+    private function ensureOrphanProcessesKilled(string $streamId)
+    {
+        if ($this->isWindows()) {
+            exec("taskkill /F /FI \"WINDOWTITLE eq FFmpeg_Stream_$streamId\" >NUL 2>&1");
         } else {
-             // Fallback for Linux
-             return 0;
+            // Kill by stream ID pattern
+            exec("pkill -f 'ffmpeg.*{$streamId}' >/dev/null 2>&1");
         }
     }
 
@@ -262,7 +295,7 @@ class RtspStreamController extends Controller
     {
         if ($pid <= 0) return false;
         
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        if ($this->isWindows()) {
             $output = [];
             exec("tasklist /FI \"PID eq $pid\" 2>&1", $output);
             return count(preg_grep("/$pid/", $output)) > 0;
@@ -316,12 +349,11 @@ class RtspStreamController extends Controller
         if (file_exists($pidFile)) {
             $pid = (int) file_get_contents($pidFile);
             if ($pid > 0) {
-                if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                if ($this->isWindows()) {
                     // Force kill on Windows - /T for tree kill (kills children like ffmpeg)
-                    // Added >NUL 2>&1 to hide output and prevent popping up
                     exec("taskkill /F /T /PID $pid >NUL 2>&1");
                 } else {
-                    exec("kill -9 $pid >NUL 2>&1");
+                    exec("kill -9 $pid >/dev/null 2>&1");
                 }
 
                 // Wait for process to actually exit (max 5 seconds)

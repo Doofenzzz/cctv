@@ -1,0 +1,5 @@
+@echo off
+title FFmpeg_Stream_1ccbd0e2cd704840220792a91eae1373
+cd /d "\home\doofenzz\laravel\cctv\storage\app\hls\1ccbd0e2cd704840220792a91eae1373"
+"C:\ffmpeg-8.0.1-essentials_build\ffmpeg-8.0.1-essentials_build\bin\ffmpeg.exe"  "-y" "-nostdin" "-analyzeduration" "100000" "-probesize" "100000" "-loglevel" "warning" "-rtsp_transport" "tcp" "-i" "rtsp://admin:L2D11FA0@192.168.0.101:554/cam/realmonitor?channel=1&subtype=0" "-c:v" "libx264" "-preset" "ultrafast" "-tune" "zerolatency" "-force_key_frames" "expr:gte(t,n_forced*2)" "-vf" "scale=1280:-2" "-crf" "28" "-maxrate" "1500k" "-bufsize" "3000k" "-an" "-f" "hls" "-hls_time" "2" "-hls_list_size" "5" "-hls_flags" "delete_segments+append_list+omit_endlist" "-hls_segment_filename" "\home\doofenzz\laravel\cctv\storage\app\hls\1ccbd0e2cd704840220792a91eae1373\segment_%%03d.ts" "\home\doofenzz\laravel\cctv\storage\app\hls\1ccbd0e2cd704840220792a91eae1373\index.m3u8" > "\home\doofenzz\laravel\cctv\storage\app\hls\1ccbd0e2cd704840220792a91eae1373\ffmpeg.log" 2>&1
+exit

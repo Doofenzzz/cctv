@@ -67,6 +67,20 @@ php artisan serve
 
 Buka http://localhost:8000
 
+## 🐳 Docker Deployment
+
+```bash
+# Build dan jalankan
+docker-compose up -d --build
+
+# Akses di http://localhost:8080
+
+# Stop
+docker-compose down
+```
+
+Untuk panduan lengkap deploy ke VPS, lihat [docker/DEPLOY.md](docker/DEPLOY.md)
+
 ### Production Build
 
 ```bash
